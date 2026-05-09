@@ -45,6 +45,17 @@ async function run() {
     fs.copyFileSync(path.join(projectRoot, 'package-lock.json'), path.join(stagingDir, 'package-lock.json'));
   }
 
+  const rootNodeModules = path.join(projectRoot, 'node_modules');
+  if (!fs.existsSync(rootNodeModules)) {
+    throw new Error('Root node_modules directory not found. Run npm install before packaging.');
+  }
+
+  console.log('Copying node_modules to staging folder...');
+  fs.cpSync(rootNodeModules, path.join(stagingDir, 'node_modules'), {
+    recursive: true,
+    dereference: true,
+  });
+
   const iconPath = path.join(projectRoot, 'bardelasbrowser.ico');
   if (fs.existsSync(iconPath)) {
     fs.copyFileSync(iconPath, path.join(stagingDir, 'bardelasbrowser.ico'));
@@ -61,7 +72,7 @@ async function run() {
     appBundleId: 'com.bardelas.browser',
     appVersion,
     asar: false,
-    prune: false,
+    prune: true,
     win32metadata: {
       CompanyName: 'Bardelas',
       FileDescription: 'Bardelas browser launcher',
