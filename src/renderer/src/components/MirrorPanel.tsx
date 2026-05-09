@@ -1,18 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent, WheelEvent } from 'react';
 import type { MirrorConfig, MirrorInputEvent } from '@shared/types';
+import { WorldMap } from './WorldMap/WorldMap';
+import countries from 'i18n-iso-countries';
+import enLocale from 'i18n-iso-countries/langs/en.json';
 
-const COUNTRY_OPTIONS = [
-  { code: 'US', label: 'United States' },
-  { code: 'GB', label: 'United Kingdom' },
-  { code: 'DE', label: 'Germany' },
-  { code: 'FR', label: 'France' },
-  { code: 'BR', label: 'Brazil' },
-  { code: 'IN', label: 'India' },
-  { code: 'JP', label: 'Japan' },
-  { code: 'AU', label: 'Australia' },
-  { code: 'CA', label: 'Canada' },
-];
+countries.registerLocale(enLocale);
+
+const COUNTRY_OPTIONS = Object.entries(countries.getNames('en', { select: 'official' }))
+  .map(([code, label]) => ({ code, label }))
+  .sort((a, b) => a.label.localeCompare(b.label));
 
 const MAX_MIRRORS = 10;
 
@@ -22,8 +19,13 @@ type MirrorPanelProps = {
   onMirrorStatusChange?: (state: { active: boolean; count: number }) => void;
 };
 
-function randomCountry() {
-  return COUNTRY_OPTIONS[Math.floor(Math.random() * COUNTRY_OPTIONS.length)].code;
+function pickRandomCountries(count: number) {
+  const available = COUNTRY_OPTIONS.map((option) => option.code);
+  const shuffled = [...available].sort(() => Math.random() - 0.5);
+  if (count <= shuffled.length) {
+    return shuffled.slice(0, count);
+  }
+  return Array.from({ length: count }, (_, index) => shuffled[index % shuffled.length]);
 }
 
 export function MirrorPanel({ profileId, active, onMirrorStatusChange }: MirrorPanelProps) {
@@ -32,6 +34,7 @@ export function MirrorPanel({ profileId, active, onMirrorStatusChange }: MirrorP
     Array.from({ length: 2 }, (_, index) => ({ id: `mirror-${index + 1}`, country: 'US', useRandomIdentity: false }))
   );
   const [randomizeLocations, setRandomizeLocations] = useState(false);
+  const [selectedMirrorIndex, setSelectedMirrorIndex] = useState(0);
   const [screenshots, setScreenshots] = useState<string[]>([]);
   const [screenshotMessage, setScreenshotMessage] = useState('');
   const [isRunning, setIsRunning] = useState(false);
@@ -161,6 +164,15 @@ export function MirrorPanel({ profileId, active, onMirrorStatusChange }: MirrorP
     setConfigs((current) => current.map((config, idx) => (idx === index ? { ...config, ...next } : config)));
   }
 
+  const selectedMirrorCountry = configs[selectedMirrorIndex]?.country ?? 'US';
+
+  function handleMirrorMapSelect(country: string) {
+    if (randomizeLocations) {
+      return;
+    }
+    updateConfig(selectedMirrorIndex, { country });
+  }
+
   const isStarting = launchStatus === 'starting';
 
   async function handleStart() {
@@ -168,9 +180,10 @@ export function MirrorPanel({ profileId, active, onMirrorStatusChange }: MirrorP
       return;
     }
 
-    const startupConfigs = configs.slice(0, count).map((config) => ({
+    const startupCountries = randomizeLocations ? pickRandomCountries(count) : [];
+    const startupConfigs = configs.slice(0, count).map((config, index) => ({
       ...config,
-      country: randomizeLocations ? randomCountry() : config.country,
+      country: randomizeLocations ? startupCountries[index] : config.country,
     }));
 
     setLaunchStatus('starting');
@@ -284,7 +297,18 @@ export function MirrorPanel({ profileId, active, onMirrorStatusChange }: MirrorP
       <div className="card" style={{ background: 'rgba(15, 23, 42, 0.8)' }}>
         {configs.slice(0, count).map((config, index) => (
           <div key={config.id} className="input-group">
-            <label className="input-label">Mirror {index + 1} country</label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+              <label className="input-label">Mirror {index + 1} country</label>
+              <button
+                type="button"
+                className="button-secondary"
+                onClick={() => setSelectedMirrorIndex(index)}
+                disabled={randomizeLocations}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                {selectedMirrorIndex === index ? 'Selected for map' : 'Choose on map'}
+              </button>
+            </div>
             <select
               className="select-field"
               value={config.country}
@@ -307,6 +331,21 @@ export function MirrorPanel({ profileId, active, onMirrorStatusChange }: MirrorP
             </label>
           </div>
         ))}
+
+        <div className="input-group" style={{ marginTop: '1rem' }}>
+          <label className="input-label">Mirror country picker</label>
+          <div style={{ color: '#94a3b8', marginBottom: '0.5rem' }}>
+            Click a country on the map to assign it to mirror {selectedMirrorIndex + 1}.
+          </div>
+          <div style={{ border: '1px solid #334155', borderRadius: '0.75rem', overflow: 'hidden', minHeight: '320px' }}>
+            <WorldMap selectedCountry={selectedMirrorCountry} onCountrySelect={handleMirrorMapSelect} />
+          </div>
+          {randomizeLocations ? (
+            <div style={{ marginTop: '0.5rem', color: '#f8bd09' }}>
+              Map selection is disabled while "Randomize location for all mirrors" is enabled.
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div className="input-group">

@@ -6,6 +6,16 @@ import type { MirrorConfig, ProxyCredentials } from '../../shared/types';
 import { resolveProxyConfig } from './ProxyHelper';
 import { FingerprintService } from './FingerprintService';
 import type { EvomiService } from './EvomiService';
+import countries from 'i18n-iso-countries';
+const enLocale = require('i18n-iso-countries/langs/en.json');
+
+countries.registerLocale(enLocale);
+
+const ALL_MIRROR_COUNTRIES = Object.keys(countries.getNames('en', { select: 'official' })).filter(Boolean);
+
+function getRandomMirrorCountry() {
+  return ALL_MIRROR_COUNTRIES[Math.floor(Math.random() * ALL_MIRROR_COUNTRIES.length)];
+}
 
 interface MirrorEntry {
   id: string;
@@ -13,8 +23,6 @@ interface MirrorEntry {
   page: any;
   config: MirrorConfig;
 }
-
-const MIRROR_COUNTRIES = ['US', 'GB', 'DE', 'FR', 'BR', 'IN', 'JP', 'AU', 'CA'];
 
 export class ActionMirrorService {
   private mirrors = new Map<string, MirrorEntry>();
@@ -220,9 +228,7 @@ export class ActionMirrorService {
 
     try {
       for (const config of configs) {
-        const targetCountry = config.useRandomIdentity
-          ? MIRROR_COUNTRIES[Math.floor(Math.random() * MIRROR_COUNTRIES.length)]
-          : config.country;
+        const targetCountry = config.useRandomIdentity ? getRandomMirrorCountry() : config.country;
         let proxy;
         if (proxyService) {
           try {
