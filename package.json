@@ -1,0 +1,100 @@
+{
+  "name": "bardelas-browser",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bardelas anti-detect browser launcher with profiles, world map, Evomi proxy support, and mirror automation.",
+  "main": "dist/main/bootstrap.js",
+  "scripts": {
+    "dev:renderer": "vite",
+    "dev:main": "tsc -p tsconfig.main.json --watch",
+    "dev": "concurrently \"npm:dev:renderer\" \"npm:dev:main\"",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:renderer": "vite build",
+    "build": "npm run build:main && npm run build:renderer",
+    "package": "npm run build && electron-builder",
+    "package:win": "npm run build && node scripts/package-win.js",
+    "package:mac": "npm run build && electron-builder --mac",
+    "package:linux": "npm run build && electron-builder --linux",
+    "rebuild-better-sqlite3": "npx electron-rebuild -f -w better-sqlite3 --arch=x64 --version=26.2.2",
+    "postinstall": "npm run rebuild-better-sqlite3",
+    "start": "npm run rebuild-better-sqlite3 && npm run build && electron .",
+    "lint": "eslint . --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "cloakbrowser": "^0.3.27",
+    "electron-store": "^8.1.0",
+    "i18n-iso-countries": "^7.14.0",
+    "mmdb-lib": "^2.2.1",
+    "playwright": "^1.59.1",
+    "playwright-core": "^1.59.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-simple-maps": "^3.0.0",
+    "socks-proxy-agent": "^10.0.0",
+    "topojson-client": "^3.1.0",
+    "uuid": "^9.0.0",
+    "world-atlas": "^2.0.2",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^8.2.0",
+    "electron": "^26.2.2",
+    "electron-builder": "^24.6.0",
+    "electron-packager": "^17.1.2",
+    "electron-rebuild": "^3.2.9",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.35.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.11"
+  },
+  "build": {
+    "appId": "com.bardelas.browser",
+    "productName": "Bardelas",
+    "asar": false,
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**",
+      "package.json",
+      "package-lock.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "tar.gz"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true
+    },
+    "npmRebuild": false,
+    "nodeGypRebuild": false,
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+  }
+}

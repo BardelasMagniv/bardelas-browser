@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dist-electron/
+dist-windows/
+dist-windows-staging/
+.env
+.DS_Store
+.vscode/
+**/node_modules/
+**/dist/
+**/dist-electron/
+* Profile.json
+*.log
